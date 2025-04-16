@@ -1,0 +1,30 @@
+from rest_framework.views import APIView
+from rest_framework.throttling import UserRateThrottle
+from ratelimit.decorators import ratelimit
+from django.utils.timezone import now
+from .tasks import forward_data_to_destinations
+
+class DataHandlerView(APIView):
+    throttle_classes = []
+
+    @ratelimit(key='user', rate='5/s', method='POST', block=True)
+    def post(self, request):
+        token = request.headers.get('CL-X-TOKEN')
+        event_id = request.headers.get('CL-X-EVENT-ID')
+
+        if not token:
+            return Response({"success": False, "message": "Unauthenticated"}, status=401)
+
+        try:
+            account = Account.objects.get(app_secret_token=token)
+        except Account.DoesNotExist:
+            return Response({"success": False, "message": "Unauthenticated"}, status=401)
+
+        if not request.data:
+            return Response({"success": False, "message": "Invalid Data"}, status=400)
+
+        received_data = request.data
+        timestamp = now()
+
+        forward_data_to_destinations.delay(str(account.id), event_id, received_data, str(timestamp))
+        return Response({"success": True, "message": "Data Received"})

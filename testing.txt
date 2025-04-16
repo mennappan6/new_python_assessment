@@ -1,0 +1,13 @@
+from rest_framework.test import APITestCase
+from django.urls import reverse
+from core.models import User, Account
+
+class AccountTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='test', email='test@example.com', password='test1234')
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_account(self):
+        data = {"name": "Test Account", "website": "https://test.com"}
+        response = self.client.post('/api/accounts/', data)
+        self.assertEqual(response.status_code, 201)

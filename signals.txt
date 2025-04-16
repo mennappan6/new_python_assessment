@@ -1,0 +1,9 @@
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+from .models import Account
+
+@receiver(post_delete, sender=Account)
+def delete_related_objects(sender, instance, **kwargs):
+    instance.destinations.all().delete()
+    instance.accountmember_set.all().delete()
+    instance.logs.all().delete()

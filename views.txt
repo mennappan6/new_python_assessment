@@ -1,0 +1,33 @@
+from rest_framework import viewsets, permissions, status
+from rest_framework.response import Response
+from .models import Account, Destination, AccountMember, Role, Log
+from .serializers import *
+from rest_framework.decorators import action
+from django.shortcuts import get_object_or_404
+from django.utils.crypto import get_random_string
+
+class AccountViewSet(viewsets.ModelViewSet):
+    queryset = Account.objects.all()
+    serializer_class = AccountSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            created_by=self.request.user,
+            updated_by=self.request.user,
+            app_secret_token=get_random_string(64)
+        )
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
+
+class DestinationViewSet(viewsets.ModelViewSet):
+    serializer_class = DestinationSerializer
+
+    def get_queryset(self):
+        return Destination.objects.filter(account__accountmember__user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)

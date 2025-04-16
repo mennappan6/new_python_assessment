@@ -1,0 +1,32 @@
+from celery import shared_task
+from .models import Account, Destination, Log
+import requests
+from django.utils.timezone import now
+
+@shared_task
+def forward_data_to_destinations(account_id, event_id, data, received_timestamp):
+    account = Account.objects.get(id=account_id)
+    destinations = account.destinations.all()
+
+    for dest in destinations:
+        try:
+            headers = dest.headers
+            status = 'success'
+            if dest.http_method == 'GET':
+                response = requests.get(dest.url, params=data, headers=headers)
+            elif dest.http_method == 'POST':
+                response = requests.post(dest.url, json=data, headers=headers)
+            else:
+                response = requests.put(dest.url, json=data, headers=headers)
+        except Exception as e:
+            status = 'failed'
+
+        Log.objects.create(
+            event_id=event_id,
+            account=account,
+            destination=dest,
+            received_timestamp=received_timestamp,
+            processed_timestamp=now(),
+            received_data=data,
+            status=status
+        )

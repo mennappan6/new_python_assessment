@@ -1,0 +1,9 @@
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
+
+class DestinationViewSet(viewsets.ModelViewSet):
+    queryset = Destination.objects.all()
+    serializer_class = DestinationSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['http_method']
+    search_fields = ['url', 'headers']

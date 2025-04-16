@@ -1,0 +1,53 @@
+import uuid
+from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+    email = models.EmailField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class Role(models.Model):
+    ROLE_CHOICES = (('admin', 'Admin'), ('normal', 'Normal'))
+    role_name = models.CharField(max_length=20, choices=ROLE_CHOICES, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class Account(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    app_secret_token = models.CharField(max_length=64, unique=True)
+    website = models.URLField(blank=True, null=True)
+    created_by = models.ForeignKey(User, related_name='created_accounts', on_delete=models.CASCADE)
+    updated_by = models.ForeignKey(User, related_name='updated_accounts', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class Destination(models.Model):
+    HTTP_METHOD_CHOICES = [('GET', 'GET'), ('POST', 'POST'), ('PUT', 'PUT')]
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='destinations')
+    url = models.URLField()
+    http_method = models.CharField(max_length=10, choices=HTTP_METHOD_CHOICES)
+    headers = models.JSONField()
+    created_by = models.ForeignKey(User, related_name='created_destinations', on_delete=models.CASCADE)
+    updated_by = models.ForeignKey(User, related_name='updated_destinations', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class AccountMember(models.Model):
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, related_name='created_members', on_delete=models.CASCADE)
+    updated_by = models.ForeignKey(User, related_name='updated_members', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class Log(models.Model):
+    event_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
+    destination = models.ForeignKey(Destination, on_delete=models.CASCADE)
+    received_timestamp = models.DateTimeField()
+    processed_timestamp = models.DateTimeField()
+    received_data = models.JSONField()
+    status = models.CharField(max_length=10)  # success, failed

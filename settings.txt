@@ -1,0 +1,14 @@
+INSTALLED_APPS = [
+    ...
+    'rest_framework',
+    'rest_framework.authtoken',
+    'django_celery_results',
+    'django_filters',
+    'core',
+]
+
+AUTH_USER_MODEL = 'core.User'
+
+# Celery settings
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
